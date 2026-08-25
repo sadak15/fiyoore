@@ -1,1 +1,34 @@
 @import "tailwindcss";
+
+@theme {
+  /* Fiyoore Gifts palette — deep plum + warm coral + soft gold */
+  --color-plum-50: #f6f0f5;
+  --color-plum-100: #ead9e8;
+  --color-plum-400: #8a4a86;
+  --color-plum-600: #5c2a5c;
+  --color-plum-800: #3a1a3a;
+  --color-plum-900: #2b1330;
+
+  --color-coral-400: #f78ba0;
+  --color-coral-500: #f2637a;
+  --color-coral-600: #d9455d;
+
+  --color-gold-400: #d9b877;
+  --color-gold-500: #c9a05b;
+
+  --color-blush-50: #fdf8f6;
+  --color-blush-100: #fbf2ee;
+
+  --font-display: "Fraunces", "Georgia", serif;
+  --font-body: "Inter", system-ui, sans-serif;
+}
+
+body {
+  font-family: var(--font-body);
+  background-color: var(--color-blush-50);
+  color: var(--color-plum-900);
+}
+
+h1, h2, h3, .font-display {
+  font-family: var(--font-display);
+}
