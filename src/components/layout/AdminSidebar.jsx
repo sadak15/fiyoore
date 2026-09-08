@@ -1,35 +1,4 @@
-import { NavLink } from 'react-router'
-import { FiGrid, FiBox, FiPackage, FiUsers } from 'react-icons/fi'
-
-const links = [
-  { to: '/admin', label: 'Overview', icon: FiGrid, end: true },
-  { to: '/admin/products', label: 'Products', icon: FiBox },
-  { to: '/admin/orders', label: 'Orders', icon: FiPackage },
-  { to: '/admin/users', label: 'Users', icon: FiUsers },
-]
-
-export default function AdminSidebar() {
-  return (
-    <aside className="w-56 shrink-0 border-r border-plum-100 bg-white p-4">
-      <p className="mb-4 px-2 font-display text-lg text-plum-800">Admin</p>
-      <nav className="flex flex-col gap-1">
-        {links.map(({ to, label, icon: Icon, end }) => (
-          <NavLink
-            key={to}
-            to={to}
-            end={end}
-            className={({ isActive }) =>
-              `flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-                isActive
-                  ? 'bg-plum-800 text-white'
-                  : 'text-plum-800 hover:bg-plum-50'
-              }`
-            }
-          >
-            <Icon size={16} /> {label}
-          </NavLink>
-        ))}
-      </nav>
-    </aside>
-  )
-}
+import { Link,NavLink } from 'react-router'
+import { FiImage,FiGrid,FiBox,FiPackage,FiUsers,FiGift,FiSettings,FiLayers,FiChevronDown } from 'react-icons/fi'
+function Item({to,label,icon:Icon,end}){return <NavLink to={to} end={end} className={({isActive})=>'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm '+(isActive?'bg-plum-50 text-coral-600':'text-plum-800 hover:bg-blush-50')}><Icon size={17}/>{label}</NavLink>}
+export default function AdminSidebar(){return <aside className="admin-sidebar w-60 shrink-0 border-r border-plum-100 bg-white p-4"><Link to="/" className="brand mb-8"><FiGift/><span>Fiyoore <b>Gifts</b></span></Link><p className="mb-3 px-3 text-xs tracking-widest text-plum-400">MAIN</p><nav className="space-y-2"><Item to="/admin" label="Dashboard" icon={FiGrid} end/><details open><summary className="flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-plum-800"><FiBox/>Inventory<FiChevronDown className="ml-auto"/></summary><div className="ml-4 border-l border-plum-100 pl-2"><Item to="/admin/categories" label="Categories" icon={FiLayers}/><Item to="/admin/products" label="Products" icon={FiBox}/></div></details><Item to="/admin/advertisements" label="Advertisements" icon={FiImage}/><Item to="/admin/orders" label="Orders" icon={FiPackage}/><details open><summary className="flex cursor-pointer items-center gap-3 px-3 py-2.5 text-sm"><FiSettings/>Settings<FiChevronDown className="ml-auto"/></summary><div className="ml-4 border-l border-plum-100 pl-2"><Item to="/admin/users" label="Users & admin roles" icon={FiUsers}/></div></details></nav><Link className="mt-8 block px-3 text-sm text-plum-400" to="/shop">? Back to shop</Link></aside>}

@@ -70,13 +70,20 @@ export function CartProvider({ children }) {
   }
 
   const removeItem = async (productId) => {
-    await supabase.from('cart_items').delete().eq('user_id', user.id).eq('product_id', productId)
+    const { error } = await supabase.from('cart_items').delete().eq('user_id', user.id).eq('product_id', productId)
+    if (error) throw error
     dispatch({ type: 'REMOVE_ITEM', productId })
   }
 
   const clearCart = async () => {
     await supabase.from('cart_items').delete().eq('user_id', user.id)
     dispatch({ type: 'CLEAR_CART' })
+  }
+
+  const refreshCart = async () => {
+    const { data, error } = await supabase.from('cart_items').select('id, product_id, quantity, products(name, price, image_url, stock)').eq('user_id', user.id)
+    if (error) throw error
+    dispatch({ type: 'SET_CART', items: data ?? [] })
   }
 
   const total = state.items.reduce(
@@ -86,7 +93,7 @@ export function CartProvider({ children }) {
 
   return (
     <CartContext.Provider
-      value={{ ...state, total, addItem, updateQuantity, removeItem, clearCart }}
+      value={{ ...state, total, addItem, updateQuantity, removeItem, clearCart, refreshCart }}
     >
       {children}
     </CartContext.Provider>
