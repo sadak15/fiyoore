@@ -9,11 +9,14 @@ import AdminRoute from './routes/AdminRoute'
 import HomePage from './pages/HomePage'
 import ShopPage from './pages/ShopPage'
 import ProductPage from './pages/ProductPage'
+import EditProfilePage from './pages/EditProfilePage'
 import ProfilePage from './pages/ProfilePage'
 import CartPage from './pages/CartPage'
 import SignInPage from './pages/SignInPage'
 import SignUpPage from './pages/SignUpPage'
 
+import AdminBannersPage from './pages/admin/AdminBannersPage'
+import AdminCategoriesPage from './pages/admin/AdminCategoriesPage'
 import AdminDashboardPage from './pages/admin/AdminDashboardPage'
 import AdminProductsPage from './pages/admin/AdminProductsPage'
 import AdminOrdersPage from './pages/admin/AdminOrdersPage'
@@ -33,6 +36,7 @@ export default function App() {
           <Route path="/signup" element={<SignUpPage />} />
 
           <Route element={<ProtectedRoute />}>
+            <Route path="/account/profile" element={<EditProfilePage />} />
             <Route path="/cart" element={<CartPage />} />
           </Route>
         </Route>
@@ -40,6 +44,8 @@ export default function App() {
         <Route element={<AdminRoute />}>
           <Route path="/admin" element={<AdminLayout />}>
             <Route index element={<AdminDashboardPage />} />
+            <Route path="advertisements" element={<AdminBannersPage />} />
+            <Route path="categories" element={<AdminCategoriesPage />} />
             <Route path="products" element={<AdminProductsPage />} />
             <Route path="orders" element={<AdminOrdersPage />} />
             <Route path="users" element={<AdminUsersPage />} />

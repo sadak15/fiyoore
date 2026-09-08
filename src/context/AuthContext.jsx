@@ -12,9 +12,9 @@ const initialState = {
 function authReducer(state, action) {
   switch (action.type) {
     case 'SESSION_LOADED':
-      return { ...state, user: action.user, loading: false }
+      return { ...state, user: action.user, profile: state.user?.id === action.user?.id ? state.profile : null, loading: !!action.user }
     case 'PROFILE_LOADED':
-      return { ...state, profile: action.profile }
+      return state.user?.id === action.userId ? { ...state, profile: action.profile, loading: false } : state
     case 'SIGNED_OUT':
       return { ...state, user: null, profile: null, loading: false }
     default:
@@ -26,12 +26,12 @@ export function AuthProvider({ children }) {
   const [state, dispatch] = useReducer(authReducer, initialState)
 
   const fetchProfile = useCallback(async (userId) => {
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from('profiles')
       .select('*')
       .eq('id', userId)
       .single()
-    if (!error) dispatch({ type: 'PROFILE_LOADED', profile: data })
+    dispatch({ type: 'PROFILE_LOADED', profile: data ?? null, userId })
   }, [])
 
   useEffect(() => {
@@ -49,25 +49,44 @@ export function AuthProvider({ children }) {
   }, [fetchProfile])
 
   const signUp = async ({ email, password, username }) => {
-    const { data, error } = await supabase.auth.signUp({ email, password })
+    const { data, error } = await supabase.auth.signUp({ email, password, options: { data: { username } } })
     if (error) throw error
-    if (data.user) {
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .insert({ id: data.user.id, username })
-      if (profileError) throw profileError
-    }
     return data
   }
 
-  const signIn = async ({ email, password }) => {
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
-    if (error) throw error
-    return data
+  const signIn = async ({ identifier, password }) => {
+    const login = identifier.trim()
+    if (!login) throw new Error('Enter your username or email.')
+    if (login.includes('@')) {
+      const { data, error } = await supabase.auth.signInWithPassword({ email: login, password })
+      if (error) throw error
+      return data
+    }
+
+    const { data, error } = await supabase.functions.invoke('username-login', {
+      body: { username: login, password },
+    })
+    if (error) {
+      let message = 'Username sign-in is unavailable. Please try your email.'
+      if (error.context instanceof Response) {
+        const result = await error.context.json().catch(() => null)
+        if (typeof result?.error === 'string') message = result.error
+      }
+      throw new Error(message)
+    }
+    if (!data?.access_token || !data?.refresh_token) {
+      throw new Error('Unable to sign in. Please try again.')
+    }
+    const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
+      access_token: data.access_token, refresh_token: data.refresh_token,
+    })
+    if (sessionError) throw sessionError
+    return sessionData
   }
 
   const signOut = async () => {
-    await supabase.auth.signOut()
+    const { error } = await supabase.auth.signOut()
+    if (error) throw error
     dispatch({ type: 'SIGNED_OUT' })
   }
 

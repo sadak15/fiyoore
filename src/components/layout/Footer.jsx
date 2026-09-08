@@ -1,7 +1,4 @@
-export default function Footer() {
-  return (
-    <footer className="mt-16 border-t border-plum-100 py-8 text-center text-sm text-plum-400">
-      © {new Date().getFullYear()} Fiyoore Gifts. Made with care.
-    </footer>
-  )
-}
+import { Link } from 'react-router'
+import { FiGift,FiArrowRight } from 'react-icons/fi'
+import useCatalog from '../../lib/useCatalog'
+export default function Footer(){const {categories}=useCatalog();return <footer className="store-footer"><div className="store-container footer-grid"><div><Link to="/" className="brand"><FiGift/><span>Fiyoore <b>Gifts</b></span></Link><p>Thoughtful gifts. Beautiful connections.<br/>Make every moment a little more special.</p></div><div><h3>Quick links</h3><Link to="/shop">Shop all gifts</Link><Link to="/shop?deals=true">Latest offers</Link><Link to="/cart">Your shopping bag</Link><Link to="/signin">Your account</Link></div><div><h3>Top categories</h3>{categories.slice(0,5).map(c=><Link key={c.id} to={'/shop?category='+c.id}>{c.name}</Link>)}</div><div><span className="eyebrow">GIVE A LITTLE HAPPINESS</span><h3>A gift for every story.</h3><p>Discover something they will love.</p><Link className="footer-cta" to="/shop">Explore the collection <FiArrowRight/></Link></div></div><div className="store-container footer-bottom">? {new Date().getFullYear()} Fiyoore Gifts. All rights reserved.<span>Made with care, given with love.</span></div></footer>}

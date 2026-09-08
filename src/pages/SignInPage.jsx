@@ -6,7 +6,7 @@ import { useAuth } from '../context/AuthContext'
 export default function SignInPage() {
   const { signIn } = useAuth()
   const navigate = useNavigate()
-  const [form, setForm] = useState({ email: '', password: '' })
+  const [form, setForm] = useState({ identifier: '', password: '' })
   const [loading, setLoading] = useState(false)
 
   const handleSubmit = async (e) => {
@@ -27,15 +27,21 @@ export default function SignInPage() {
       <h1 className="font-display text-2xl text-plum-900">Welcome back</h1>
       <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-4">
         <input
-          type="email"
-          placeholder="Email"
+          type="text"
+          autoComplete="username"
+          autoCapitalize="none"
+          spellCheck={false}
+          aria-label="Username or email"
+          placeholder="Username or email"
           required
-          value={form.email}
-          onChange={(e) => setForm({ ...form, email: e.target.value })}
+          value={form.identifier}
+          onChange={(e) => setForm({ ...form, identifier: e.target.value })}
           className="rounded-lg border border-plum-100 px-4 py-2.5 focus:border-coral-500 focus:outline-none"
         />
         <input
           type="password"
+          autoComplete="current-password"
+          aria-label="Password"
           placeholder="Password"
           required
           value={form.password}

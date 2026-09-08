@@ -1,6 +1,8 @@
-import { useEffect, useMemo, useState } from 'react'
+import ProductActions from '../../components/products/ProductActions'
+import ProductImage from '../../components/products/ProductImage'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import toast from 'react-hot-toast'
-import { FiPlus, FiMoreVertical, FiEdit2, FiTrash2, FiX } from 'react-icons/fi'
+import { FiPlus, FiX } from 'react-icons/fi'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../context/AuthContext'
 
@@ -10,19 +12,24 @@ const emptyForm = {
   price: '',
   stock: '',
   image_url: '',
+  category_id: '',
+  compare_at_price: '',
 }
 
 export default function AdminProductsPage() {
   const { user } = useAuth()
   const [products, setProducts] = useState([])
+  const [categories, setCategories] = useState([])
   const [loading, setLoading] = useState(true)
 
   const [modalOpen, setModalOpen] = useState(false)
   const [editingProduct, setEditingProduct] = useState(null)
   const [openMenuId, setOpenMenuId] = useState(null)
+  const closeMenu = useCallback(() => setOpenMenuId(null), [])
 
   const [draftFilters, setDraftFilters] = useState({
     search: '',
+    category: '',
     status: 'all',
     startDate: '',
     endDate: '',
@@ -31,11 +38,15 @@ export default function AdminProductsPage() {
 
   const loadData = async () => {
     setLoading(true)
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('products')
-      .select('*')
+      .select('*, categories(name)')
       .order('created_at', { ascending: false })
+    if (error) toast.error(error.message)
     setProducts(data ?? [])
+    const result = await supabase.from('categories').select('*').order('name')
+    if (result.error) toast.error(result.error.message)
+    setCategories(result.data ?? [])
     setLoading(false)
   }
 
@@ -73,7 +84,7 @@ export default function AdminProductsPage() {
       const createdAt = new Date(p.created_at)
       const matchesStart = !appliedFilters.startDate || createdAt >= new Date(appliedFilters.startDate)
       const matchesEnd = !appliedFilters.endDate || createdAt <= new Date(appliedFilters.endDate + 'T23:59:59')
-      return matchesSearch && matchesStatus && matchesStart && matchesEnd
+      return matchesSearch && matchesStatus && matchesStart && matchesEnd && (!appliedFilters.category || p.category_id === appliedFilters.category)
     })
   }, [products, appliedFilters])
 
@@ -150,6 +161,7 @@ export default function AdminProductsPage() {
             <option value="inactive">Inactive</option>
           </select>
         </div>
+        <label className="min-w-[150px] flex-1 text-xs text-plum-400">Category<select value={draftFilters.category} onChange={e => setDraftFilters({ ...draftFilters, category: e.target.value })} className="mt-1 w-full rounded-lg border border-plum-100 px-3 py-2 text-sm"><option value="">All categories</option>{categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</select></label>
         <button
           type="submit"
           className="rounded-lg bg-plum-800 px-6 py-2.5 text-sm font-medium text-white hover:bg-plum-600 transition-colors"
@@ -202,13 +214,14 @@ export default function AdminProductsPage() {
                     <td className="px-4 py-3 text-plum-400">{i + 1}</td>
                     <td className="px-4 py-3">
                       <div className="h-12 w-12 overflow-hidden rounded-lg bg-plum-50">
-                        {p.image_url && (
-                          <img src={p.image_url} alt={p.name} className="h-full w-full object-cover" />
+                        {(
+                          <ProductImage src={p.image_url} alt={p.name} className="h-full w-full object-cover" />
                         )}
                       </div>
                     </td>
                     <td className="px-4 py-3">
                       <p className="font-medium text-plum-900">{p.name}</p>
+                      <p className="text-xs text-plum-400">{p.categories?.name}</p>
                     </td>
                     <td className="px-4 py-3 font-medium text-plum-900">${p.price}</td>
                     <td className="px-4 py-3 text-plum-600">{p.stock}</td>
@@ -223,28 +236,14 @@ export default function AdminProductsPage() {
                       </Badge>
                     </td>
                     <td className="relative px-4 py-3 text-right">
-                      <button
-                        onClick={() => setOpenMenuId(openMenuId === p.id ? null : p.id)}
-                        className="rounded-full p-1.5 text-plum-400 hover:bg-plum-50 hover:text-plum-800"
-                      >
-                        <FiMoreVertical />
-                      </button>
-                      {openMenuId === p.id && (
-                        <div className="absolute right-4 top-10 z-10 w-36 overflow-hidden rounded-lg border border-plum-100 bg-white shadow-lg">
-                          <button
-                            onClick={() => openEditModal(p)}
-                            className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-plum-800 hover:bg-blush-50"
-                          >
-                            <FiEdit2 size={14} /> Edit
-                          </button>
-                          <button
-                            onClick={() => handleDelete(p.id)}
-                            className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-coral-600 hover:bg-blush-50"
-                          >
-                            <FiTrash2 size={14} /> Delete
-                          </button>
-                        </div>
-                      )}
+                      <ProductActions
+                        name={p.name}
+                        open={openMenuId === p.id}
+                        onToggle={() => setOpenMenuId(openMenuId === p.id ? null : p.id)}
+                        onClose={closeMenu}
+                        onEdit={() => openEditModal(p)}
+                        onDelete={() => handleDelete(p.id)}
+                      />
                     </td>
                   </tr>
                 ))
@@ -257,6 +256,7 @@ export default function AdminProductsPage() {
       {modalOpen && (
         <ProductModal
           product={editingProduct}
+          categories={categories}
           ownerId={user.id}
           onClose={() => setModalOpen(false)}
           onSaved={() => {
@@ -289,7 +289,7 @@ function Badge({ tone, children }) {
   )
 }
 
-function ProductModal({ product, ownerId, onClose, onSaved }) {
+function ProductModal({ product, ownerId, categories, onClose, onSaved }) {
   const [form, setForm] = useState(
     product
       ? {
@@ -298,6 +298,8 @@ function ProductModal({ product, ownerId, onClose, onSaved }) {
           price: product.price,
           stock: product.stock,
           image_url: product.image_url ?? '',
+          category_id: product.category_id ?? '',
+          compare_at_price: product.compare_at_price ?? '',
         }
       : emptyForm
   )
@@ -308,6 +310,7 @@ function ProductModal({ product, ownerId, onClose, onSaved }) {
   const handleImageUpload = async (e) => {
     const file = e.target.files?.[0]
     if (!file) return
+    if (!['image/jpeg', 'image/png', 'image/webp', 'image/gif'].includes(file.type) || file.size > 5 * 1024 * 1024) return toast.error('Choose a JPEG, PNG, WebP or GIF image up to 5 MB')
     setUploading(true)
     try {
       const ext = file.name.split('.').pop()
@@ -326,14 +329,18 @@ function ProductModal({ product, ownerId, onClose, onSaved }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    if (!form.category_id) return toast.error('Choose a category first')
+    if (form.compare_at_price !== '' && Number(form.compare_at_price) <= Number(form.price)) return toast.error('Original price must be greater than the sale price')
     setSaving(true)
     const payload = {
-      name: form.name,
+      name: form.name.trim(),
+      category_id: form.category_id,
+      compare_at_price: form.compare_at_price === '' ? null : Number(form.compare_at_price),
       description: form.description,
       price: Number(form.price),
       stock: Number(form.stock),
       image_url: form.image_url || null,
-      owner_id: ownerId,
+      owner_id: product ? product.owner_id : ownerId,
     }
     try {
       const { error } = product
@@ -369,6 +376,9 @@ function ProductModal({ product, ownerId, onClose, onSaved }) {
             onChange={(e) => setForm({ ...form, name: e.target.value })}
             className="rounded-lg border border-plum-100 px-3 py-2 text-sm"
           />
+          <label className="text-sm">Category<select required value={form.category_id} onChange={e => setForm({ ...form, category_id: e.target.value })} className="mt-1 w-full rounded-lg border border-plum-100 px-3 py-2"><option value="">Choose a category</option>{categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</select></label>
+          {!categories.length && <p className="text-sm text-coral-600">Add a category under Inventory ? Categories before adding products.</p>}
+          <label className="text-sm">Original price (optional, for deals)<input type="number" min="0" step="0.01" value={form.compare_at_price} onChange={e => setForm({ ...form, compare_at_price: e.target.value })} className="mt-1 w-full rounded-lg border border-plum-100 px-3 py-2" /></label>
           <textarea
             placeholder="Description"
             value={form.description}
@@ -378,6 +388,7 @@ function ProductModal({ product, ownerId, onClose, onSaved }) {
           <div className="grid grid-cols-2 gap-3">
             <input
               type="number"
+              min="0"
               step="0.01"
               placeholder="Price"
               required
@@ -387,6 +398,7 @@ function ProductModal({ product, ownerId, onClose, onSaved }) {
             />
             <input
               type="number"
+              min="0"
               placeholder="Stock"
               required
               value={form.stock}
@@ -417,7 +429,7 @@ function ProductModal({ product, ownerId, onClose, onSaved }) {
               <>
                 <input
                   type="file"
-                  accept="image/*"
+                  accept="image/jpeg,image/png,image/webp,image/gif"
                   onChange={handleImageUpload}
                   disabled={uploading}
                   className="text-sm text-plum-600"
@@ -434,14 +446,14 @@ function ProductModal({ product, ownerId, onClose, onSaved }) {
             )}
 
             {form.image_url && (
-              <img src={form.image_url} alt="" className="mt-2 h-16 w-16 rounded-lg object-cover" />
+              <ProductImage src={form.image_url} alt="" className="mt-2 h-16 w-16 rounded-lg object-cover" />
             )}
           </div>
 
           <div className="mt-2 flex gap-2">
             <button
               type="submit"
-              disabled={saving || uploading}
+              disabled={saving || uploading || !categories.length}
               className="flex-1 rounded-full bg-plum-800 py-2.5 text-sm font-medium text-white hover:bg-coral-500 disabled:opacity-60 transition-colors"
             >
               {saving ? 'Saving…' : product ? 'Save changes' : 'Add product'}

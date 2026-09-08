@@ -1,61 +1,14 @@
-import { Link } from 'react-router'
-import { FiShoppingBag, FiUser } from 'react-icons/fi'
-import { useAuth } from '../../context/AuthContext'
+import UserDropdown from './UserDropdown'
+import { useState } from 'react'
+import { Link,useNavigate } from 'react-router'
+import { FiGift,FiSearch,FiShoppingBag } from 'react-icons/fi'
+
 import { useCart } from '../../context/CartContext'
-
-export default function Header() {
-  const { user, profile, isAdmin, signOut } = useAuth()
-  const { items } = useCart()
-
-  return (
-    <header className="sticky top-0 z-20 border-b border-plum-100 bg-blush-50/90 backdrop-blur">
-      <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 sm:px-6">
-        <Link to="/" className="font-display text-xl font-semibold text-plum-800">
-          Fiyoore <span className="text-coral-500">Gifts</span>
-        </Link>
-
-        <nav className="hidden items-center gap-6 text-sm font-medium text-plum-800 sm:flex">
-          <Link to="/shop" className="hover:text-coral-500">Shop</Link>
-          {isAdmin && (
-            <Link to="/admin" className="hover:text-coral-500">Dashboard</Link>
-          )}
-        </nav>
-
-        <div className="flex items-center gap-4">
-          <Link to="/cart" className="relative text-plum-800 hover:text-coral-500">
-            <FiShoppingBag size={22} />
-            {items.length > 0 && (
-              <span className="absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full bg-coral-500 text-xs font-semibold text-white">
-                {items.length}
-              </span>
-            )}
-          </Link>
-
-          {user ? (
-            <div className="flex items-center gap-3">
-              <Link
-                to={`/u/${profile?.username ?? ''}`}
-                className="flex items-center gap-1 text-sm font-medium text-plum-800 hover:text-coral-500"
-              >
-                <FiUser /> {profile?.username ?? 'Profile'}
-              </Link>
-              <button
-                onClick={signOut}
-                className="rounded-full border border-plum-600 px-3 py-1 text-sm font-medium text-plum-600 hover:bg-plum-600 hover:text-white transition-colors"
-              >
-                Sign out
-              </button>
-            </div>
-          ) : (
-            <Link
-              to="/signin"
-              className="rounded-full bg-plum-800 px-4 py-1.5 text-sm font-medium text-white hover:bg-plum-600 transition-colors"
-            >
-              Sign in
-            </Link>
-          )}
-        </div>
-      </div>
-    </header>
-  )
+import useCatalog from '../../lib/useCatalog'
+export default function Header(){
+ const {items}=useCart(),{categories}=useCatalog()
+ const [search,setSearch]=useState(''),[category,setCategory]=useState('')
+ const navigate=useNavigate()
+ function submit(e){e.preventDefault();const p=new URLSearchParams();if(search.trim())p.set('q',search.trim());if(category)p.set('category',category);navigate('/shop?'+p)}
+ return <header className="store-header"><div className="store-container header-inner"><Link to="/" className="brand"><FiGift/><span>Fiyoore <b>Gifts</b><small>A LITTLE GIFT. A LOT OF LOVE.</small></span></Link><form onSubmit={submit} className="store-search"><select aria-label="Search category" value={category} onChange={e=>setCategory(e.target.value)}><option value="">All categories</option>{categories.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}</select><input aria-label="Search gifts" placeholder="Find something thoughtful?" value={search} onChange={e=>setSearch(e.target.value)}/><button aria-label="Search"><FiSearch size={21}/></button></form><nav className="header-actions"><Link to="/cart" className="cart-link"><FiShoppingBag size={21}/> Cart <span>{items.reduce((s,i)=>s+i.quantity,0)}</span></Link><UserDropdown /></nav></div></header>
 }
